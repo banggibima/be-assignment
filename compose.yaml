@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:17.5-alpine
+    container_name: be-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: be_assignment
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d be_assignment"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: be-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DATABASE: be_assignment
+      POSTGRES_SSLMODE: disable
+      HTTP_PORT: 8080
+    ports:
+      - "8081:8080"
+
+  test:
+    build:
+      context: .
+      target: builder
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/be_assignment?sslmode=disable
+    command: ["go", "test", "-v", "./tests"]
+
+volumes:
+  pgdata:
+    driver: local

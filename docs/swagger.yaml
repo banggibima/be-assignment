@@ -1,0 +1,274 @@
+definitions:
+  dto.CancelJobResponse:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.CreateOrderRequest:
+    properties:
+      buyer_id:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - buyer_id
+    - product_id
+    - quantity
+    type: object
+  dto.CreateOrderResponse:
+    properties:
+      buyer_id:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      status:
+        type: string
+      total_price:
+        type: integer
+    type: object
+  dto.CreateSettlementJobRequest:
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+    required:
+    - from
+    - to
+    type: object
+  dto.CreateSettlementJobResponse:
+    properties:
+      job_id:
+        type: string
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.GetOrderResponse:
+    properties:
+      buyer_id:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      total_price:
+        type: integer
+    type: object
+  dto.SettlementProgressResponse:
+    properties:
+      download_url:
+        type: string
+      job_id:
+        type: string
+      processed:
+        type: integer
+      progress:
+        type: integer
+      status:
+        type: string
+      total:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /downloads/{job_id}:
+    get:
+      description: Download CSV file of completed job
+      parameters:
+      - description: Job ID
+        in: path
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      summary: Download Job Result
+      tags:
+      - Job
+  /health:
+    get:
+      description: Check if the server is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health Check
+      tags:
+      - Health
+  /jobs/{id}:
+    get:
+      description: Get the status of a specific job
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SettlementProgressResponse'
+        "404":
+          description: JOB_NOT_FOUND
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get Job Status
+      tags:
+      - Job
+  /jobs/{id}/cancel:
+    post:
+      description: Cancel a running job
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CancelJobResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Cancel Job
+      tags:
+      - Job
+  /jobs/settlement:
+    post:
+      consumes:
+      - application/json
+      description: Create a new settlement job
+      parameters:
+      - description: Job request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateSettlementJobRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dto.CreateSettlementJobResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create Settlement Job
+      tags:
+      - Job
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order
+      parameters:
+      - description: Order request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: PRODUCT_NOT_FOUND
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: OUT_OF_STOCK
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create Order
+      tags:
+      - Order
+  /orders/{id}:
+    get:
+      description: Get order details by ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetOrderResponse'
+        "404":
+          description: ORDER_NOT_FOUND
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get Order By ID
+      tags:
+      - Order
+swagger: "2.0"
